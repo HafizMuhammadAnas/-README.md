@@ -1,0 +1,668 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyMPRjTSNtR3dUVopGfrGjBD",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/HafizMuhammadAnas/-README.md/blob/main/NLP%20(steeming%20%26%20stop%20words)\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "id": "V7csu-YSVewN"
+      },
+      "outputs": [],
+      "source": [
+        "import nltk                                # Python library for NLP\n",
+        "from nltk.corpus import twitter_samples    # sample Twitter dataset from NLTK\n",
+        "import matplotlib.pyplot as plt            # library for visualization\n",
+        "import random  "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "nltk.download('twitter_samples')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "vMlO9scFVgqI",
+        "outputId": "7474f18c-442f-44de-ef64-43e8cb6943af"
+      },
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package twitter_samples to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/twitter_samples.zip.\n"
+          ]
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 2
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "all_positive_tweets = twitter_samples.strings('positive_tweets.json')\n",
+        "all_negative_tweets = twitter_samples.strings('negative_tweets.json')"
+      ],
+      "metadata": {
+        "id": "jTqmUMCNVyvY"
+      },
+      "execution_count": 3,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('Number of positive tweets: ', len(all_positive_tweets))\n",
+        "print('Number of negative tweets: ', len(all_negative_tweets))\n",
+        "\n",
+        "print('\\nThe type of all_positive_tweets is: ', type(all_positive_tweets))\n",
+        "print('The type of a tweet entry is: ', type(all_negative_tweets[0]))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "78JMgZ4fV6cM",
+        "outputId": "436c1946-f997-4095-924e-4820ad3e7452"
+      },
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Number of positive tweets:  5000\n",
+            "Number of negative tweets:  5000\n",
+            "\n",
+            "The type of all_positive_tweets is:  <class 'list'>\n",
+            "The type of a tweet entry is:  <class 'str'>\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Declare a figure with a custom size\n",
+        "fig = plt.figure(figsize=(2, 2))\n",
+        "\n",
+        "# labels for the two classes\n",
+        "labels = 'Positives', 'Negative'\n",
+        "\n",
+        "# Sizes for each slide\n",
+        "sizes = [len(all_positive_tweets), len(all_negative_tweets)] \n",
+        "\n",
+        "# Declare pie chart, where the slices will be ordered and plotted counter-clockwise:\n",
+        "plt.pie(sizes, labels=labels, autopct='%1.1f%%',\n",
+        "        shadow=True, startangle=90)\n",
+        "\n",
+        "# Equal aspect ratio ensures that pie is drawn as a circle.\n",
+        "plt.axis('equal')  \n",
+        "\n",
+        "# Display the chart\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 140
+        },
+        "id": "vSIV2XbXV-1f",
+        "outputId": "a3687e76-6b54-498a-98f3-7c5d79002f1a"
+      },
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<Figure size 144x144 with 1 Axes>"
+            ],
+            "image/png": "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\n"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('\\033[92m' + all_positive_tweets[random.randint(0,5000)])\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "YTrb9B7iWIX5",
+        "outputId": "f619120c-ae4f-4cf8-f392-974ba0d1d565"
+      },
+      "execution_count": 13,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\u001b[92mYes, Pearson had that reputation. Does Nikkei have that reputation? Hmmm...ask Michael Woodford. :D @W7VOA @FT\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('\\033[91m' + all_negative_tweets[random.randint(0,5000)])"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zyMnF3TtXfgP",
+        "outputId": "cd305b6a-0bed-433a-c5bc-ed17bed419b3"
+      },
+      "execution_count": 18,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\u001b[91m@taekooknet No I didn't :( Hahaha I wish T.T You?\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tweet = all_positive_tweets[2277]\n",
+        "print(tweet)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "LDDtSOYBXngf",
+        "outputId": "c84d537d-3ae5-49dc-cdfc-88a2dd919cfb"
+      },
+      "execution_count": 24,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "why u so fab :((( @.therese hahahahaha creds @_sheenapadua http://t.co/qcwv8In7jM\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "a=nltk.download('stopwords')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wb4HJzyUX5SB",
+        "outputId": "062f5421-7ef6-47e4-8034-cb3757230320"
+      },
+      "execution_count": 26,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Package stopwords is already up-to-date!\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "a"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "zO2TnmSRZU6e",
+        "outputId": "07b7d3a8-52fd-4883-fd79-e4cb5e9bd640"
+      },
+      "execution_count": 27,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 27
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import re                                  # library for regular expression operations\n",
+        "import string                              # for string operations\n",
+        "\n",
+        "from nltk.corpus import stopwords          # module for stop words that come with NLTK\n",
+        "from nltk.stem import PorterStemmer        # module for stemming\n",
+        "from nltk.tokenize import TweetTokenizer   # module for tokenizing strings"
+      ],
+      "metadata": {
+        "id": "w_IqXuHOZsat"
+      },
+      "execution_count": 28,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('\\033[92m' + tweet)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "f_PcQUn0Z0uM",
+        "outputId": "1b914605-bd27-41ab-919e-ecc25766a9a2"
+      },
+      "execution_count": 34,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\u001b[92mwhy u so fab :((( @.therese hahahahaha creds @_sheenapadua http://t.co/qcwv8In7jM\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('\\033[94m')\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "dA9NvesWZ8BN",
+        "outputId": "44fa654e-89ae-42ab-965a-78d5c5bbbf18"
+      },
+      "execution_count": 35,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\u001b[94m\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tweet2 = re.sub(r'^RT[\\s]+', '', tweet)\n"
+      ],
+      "metadata": {
+        "id": "pnawB1B6aT9X"
+      },
+      "execution_count": 36,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(tweet2)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "NxYPaguIabl_",
+        "outputId": "98febd75-b11c-4e77-cbf5-e03a3a458578"
+      },
+      "execution_count": 37,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "why u so fab :((( @.therese hahahahaha creds @_sheenapadua http://t.co/qcwv8In7jM\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tweet2 = re.sub(r'https?://[^\\s\\n\\r]+', '', tweet2)"
+      ],
+      "metadata": {
+        "id": "RCMju0fzak6O"
+      },
+      "execution_count": 38,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(tweet2)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lu-wUqWNasTu",
+        "outputId": "b57c922c-d941-446f-9d96-6c5ed22a92a7"
+      },
+      "execution_count": 39,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "why u so fab :((( @.therese hahahahaha creds @_sheenapadua \n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tweet2 = re.sub(r'@', '', tweet2)"
+      ],
+      "metadata": {
+        "id": "sQLnAVclavSd"
+      },
+      "execution_count": 43,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(tweet2)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "W-yw-ahZbI-k",
+        "outputId": "942c66bb-afc7-4c8b-c1f7-545212403636"
+      },
+      "execution_count": 44,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "why u so fab :((( .therese hahahahaha creds _sheenapadua \n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print()\n",
+        "print('\\033[92m' + tweet2)\n",
+        "print('\\033[93m')\n",
+        "# instantiate tokenizer class\n",
+        "tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True,\n",
+        "                               reduce_len=True)\n",
+        "\n",
+        "# tokenize tweets\n",
+        "tweet_tokens = tokenizer.tokenize(tweet2)\n",
+        "\n",
+        "print()\n",
+        "print('Tokenized string:')\n",
+        "print(tweet_tokens)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "PD-SYHr8bWAG",
+        "outputId": "fca84787-1594-4cad-d517-35c9cdc4b17e"
+      },
+      "execution_count": 51,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "\u001b[92mwhy u so fab :((( .therese hahahahaha creds _sheenapadua \n",
+            "\u001b[93m\n",
+            "\n",
+            "Tokenized string:\n",
+            "['why', 'u', 'so', 'fab', ':(', '(', '(', '.', 'therese', 'hahahahaha', 'creds', '_sheenapadua']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "stopwords_english = stopwords.words('english')"
+      ],
+      "metadata": {
+        "id": "OKI6IGGFcq0h"
+      },
+      "execution_count": 53,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('Stop words\\n')\n",
+        "print(stopwords_english)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "G6Y7pxetdOkk",
+        "outputId": "94641ebc-dec6-4079-ea3c-0b8a90fb59db"
+      },
+      "execution_count": 54,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Stop words\n",
+            "\n",
+            "['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', \"you're\", \"you've\", \"you'll\", \"you'd\", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', \"she's\", 'her', 'hers', 'herself', 'it', \"it's\", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', \"that'll\", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', \"don't\", 'should', \"should've\", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', \"aren't\", 'couldn', \"couldn't\", 'didn', \"didn't\", 'doesn', \"doesn't\", 'hadn', \"hadn't\", 'hasn', \"hasn't\", 'haven', \"haven't\", 'isn', \"isn't\", 'ma', 'mightn', \"mightn't\", 'mustn', \"mustn't\", 'needn', \"needn't\", 'shan', \"shan't\", 'shouldn', \"shouldn't\", 'wasn', \"wasn't\", 'weren', \"weren't\", 'won', \"won't\", 'wouldn', \"wouldn't\"]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('\\nPunctuation\\n')\n",
+        "print(string.punctuation)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "tL3LKrcKdXjR",
+        "outputId": "a4948beb-f5de-47f6-d2ba-650a85e35753"
+      },
+      "execution_count": 55,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "Punctuation\n",
+            "\n",
+            "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print()\n",
+        "print('\\033[92m')\n",
+        "print(tweet_tokens)\n",
+        "print('\\033[94m')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ggM4k20bdcnt",
+        "outputId": "42a5caf4-9ece-4594-fd21-f39a34659381"
+      },
+      "execution_count": 58,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "\u001b[92m\n",
+            "['why', 'u', 'so', 'fab', ':(', '(', '(', '.', 'therese', 'hahahahaha', 'creds', '_sheenapadua']\n",
+            "\u001b[94m\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "tweets_clean = []\n",
+        "\n",
+        "for word in tweet_tokens: # Go through every word in your tokens list\n",
+        "    if (word not in stopwords_english and  # remove stopwords\n",
+        "        word not in string.punctuation):  # remove punctuation\n",
+        "        tweets_clean.append(word)\n",
+        "\n",
+        "print('removed stop words and punctuation:')\n",
+        "print(tweets_clean)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "3c-O5wPcdnQ5",
+        "outputId": "b2a3136a-43f2-45c4-e7aa-426b9c09e4b5"
+      },
+      "execution_count": 59,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "removed stop words and punctuation:\n",
+            "['u', 'fab', ':(', 'therese', 'hahahahaha', 'creds', '_sheenapadua']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print()\n",
+        "print('\\033[92m')\n",
+        "print(tweets_clean)\n",
+        "print('\\033[94m')\n",
+        "\n",
+        "# Instantiate stemming class\n",
+        "stemmer = PorterStemmer() \n",
+        "\n",
+        "# Create an empty list to store the stems\n",
+        "tweets_stem = [] \n",
+        "\n",
+        "for word in tweets_clean:\n",
+        "    stem_word = stemmer.stem(word)  # stemming word\n",
+        "    tweets_stem.append(stem_word)  # append to the list\n",
+        "\n",
+        "print('stemmed words:')\n",
+        "print(tweets_stem)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "GTeCXKoXd9Tq",
+        "outputId": "3265f3fe-7a5d-4dd0-acc3-a2fee7a88143"
+      },
+      "execution_count": 60,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "\u001b[92m\n",
+            "['u', 'fab', ':(', 'therese', 'hahahahaha', 'creds', '_sheenapadua']\n",
+            "\u001b[94m\n",
+            "stemmed words:\n",
+            "['u', 'fab', ':(', 'theres', 'hahahahaha', 'cred', '_sheenapadua']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "Kyz7ObhUenth"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
